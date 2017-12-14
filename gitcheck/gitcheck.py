@@ -73,6 +73,7 @@ def showDebug(mess, level='info'):
 def searchRepositories():
     showDebug('Beginning scan... building list of git folders')
     dirs = argopts.get('searchDir', [os.path.abspath(os.getcwd())])
+    ignoreDirs = argopts.get('ignoreDir', [])
     repo = set()
     for curdir in dirs:
         if curdir[-1:] == '/':
@@ -83,7 +84,12 @@ def searchRepositories():
         startinglevel = curdir.count(os.sep)
 
         for directory, dirnames, filenames in os.walk(curdir, topdown=True):
+            dirnames[:] = [d for d in dirnames if "%s/%s" % (directory[len(curdir)+1:], d) not in ignoreDirs]
             level = directory.count(os.sep) - startinglevel
+
+            if (1 == level and directory[len(curdir)+1:] in ignoreDirs):
+                dirnames[:] = []
+                continue
 
             if '.git' in dirnames:
                 showDebug("  Add %s repository" % directory)
@@ -465,6 +471,7 @@ def usage():
     print("  -e, --email                          Send an email with result as html, using mail.properties parameters")
     print("  -a, --all-branch                     Show the status of all branches")
     print("  -l <re>, --localignore=<re>          ignore changes in local files which match the regex <re>")
+    print("  --ignore-dir=<dir>                   ignore directories in search (name relative to search dir, can be used multiple times)")
     print("  --init-email                         Initialize mail.properties file (has to be modified by user using JSON Format)")
 
 
@@ -474,7 +481,8 @@ def main():
             sys.argv[1:],
             "vhrubw:i:d:m:q:e:al:",
             [
-                "verbose", "debug", "help", "remote", "untracked", "bell", "watch=", "ignore-branch=",
+                "verbose", "debug", "help", "remote", "untracked", "bell", "watch=",
+                "ignore-branch=", "ignore-dir=",
                 "dir=", "maxdepth=", "quiet", "email", "init-email", "all-branch", "localignore="
             ]
         )
@@ -505,6 +513,11 @@ def main():
                 sys.exit(2)
         elif opt in ["-i", "--ignore-branch"]:
             argopts['ignoreBranch'] = arg
+        elif opt in ["--ignore-dir"]:
+            ignoreDirs = argopts.get('ignoreDir', [])
+            if (ignoreDirs == []):
+                argopts['ignoreDir'] = ignoreDirs
+            ignoreDirs.append(arg)
         elif opt in ["-l", "--localignore"]:
             argopts['ignoreLocal'] = arg
         elif opt in ["-d", "--dir"]:

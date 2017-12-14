@@ -341,7 +341,7 @@ def getRemoteRepositories(rep):
     result = gitExec(rep, "remote"
                      % locals())
 
-    remotes = [x for x in result.split('\n') if x]
+    remotes = [x for x in result.split('\n') if x and x not in argopts.get('ignoreRemote', [])]
     return remotes
 
 
@@ -472,6 +472,7 @@ def usage():
     print("  -a, --all-branch                     Show the status of all branches")
     print("  -l <re>, --localignore=<re>          ignore changes in local files which match the regex <re>")
     print("  --ignore-dir=<dir>                   ignore directories in search (name relative to search dir, can be used multiple times)")
+    print("  --ignore-remote=<remote>             ignore a remote (can be used multiple times)")
     print("  --init-email                         Initialize mail.properties file (has to be modified by user using JSON Format)")
 
 
@@ -482,7 +483,7 @@ def main():
             "vhrubw:i:d:m:q:e:al:",
             [
                 "verbose", "debug", "help", "remote", "untracked", "bell", "watch=",
-                "ignore-branch=", "ignore-dir=",
+                "ignore-branch=", "ignore-dir=", "ignore-remote=",
                 "dir=", "maxdepth=", "quiet", "email", "init-email", "all-branch", "localignore="
             ]
         )
@@ -518,6 +519,11 @@ def main():
             if (ignoreDirs == []):
                 argopts['ignoreDir'] = ignoreDirs
             ignoreDirs.append(arg)
+        elif opt in ["--ignore-remote"]:
+            ignoreRemotes = argopts.get('ignoreRemote', [])
+            if (ignoreRemotes == []):
+                argopts['ignoreRemote'] = ignoreRemotes
+            ignoreRemotes.append(arg)
         elif opt in ["-l", "--localignore"]:
             argopts['ignoreLocal'] = arg
         elif opt in ["-d", "--dir"]:
